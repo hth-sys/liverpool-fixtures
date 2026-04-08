@@ -46,20 +46,16 @@
 </div>
 
 <script>
-const API_KEY = 'dcc0c6af914942f69e8627a58c86bb8d';
-const LFC_ID = 64;
 let allMatches = [];
 let activeFilter = 'All';
 
 async function fetchFixtures() {
   try {
-    const target = `https://api.football-data.org/v4/teams/${LFC_ID}/matches?status=SCHEDULED&token=${API_KEY}`;
-    const proxyUrl = `https://thingproxy.freeboard.io/fetch/${target}`;
-    const res = await fetch(proxyUrl);
+    const res = await fetch('/api/fixtures');
     if (!res.ok) throw new Error('API error ' + res.status);
     const data = await res.json();
-    allMatches = data.matches || [];
-    if (!allMatches.length) throw new Error('No matches returned');
+    allMatches = data.response || [];
+    if (!allMatches.length) throw new Error('No fixtures found');
     buildFilters();
     renderFixtures();
   } catch(e) {
@@ -69,7 +65,7 @@ async function fetchFixtures() {
 }
 
 function buildFilters() {
-  const comps = ['All', ...new Set(allMatches.map(m => m.competition.name))];
+  const comps = ['All', ...new Set(allMatches.map(m => m.league.name))];
   const row = document.getElementById('filters');
   row.innerHTML = comps.map(c =>
     `<button class="filter-btn${c === 'All' ? ' active' : ''}" onclick="setFilter('${c.replace(/'/g,"\\'")}')">
@@ -87,7 +83,7 @@ function setFilter(comp) {
 }
 
 function renderFixtures() {
-  const filtered = activeFilter === 'All' ? allMatches : allMatches.filter(m => m.competition.name === activeFilter);
+  const filtered = activeFilter === 'All' ? allMatches : allMatches.filter(m => m.league.name === activeFilter);
   document.getElementById('count').textContent = filtered.length
     ? `${filtered.length} upcoming match${filtered.length !== 1 ? 'es' : ''}` : '';
 
@@ -96,24 +92,24 @@ function renderFixtures() {
     return;
   }
 
-  document.getElementById('fixtures-list').innerHTML = filtered.slice(0, 30).map(m => {
-    const d = new Date(m.utcDate);
+  document.getElementById('fixtures-list').innerHTML = filtered.map(m => {
+    const d = new Date(m.fixture.date);
     const dateStr = d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
     const timeStr = d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-    const isHome = m.homeTeam.id === LFC_ID;
+    const isHome = m.teams.home.name === 'Liverpool';
     const homeClass = `team${isHome ? ' lfc' : ''}`;
     const awayClass = `team away${!isHome ? ' lfc' : ''}`;
     return `<div class="fixture-card">
       <div class="fixture-meta">
-        <span class="competition">${m.competition.name}</span>
+        <span class="competition">${m.league.name}</span>
         <span class="date">${dateStr} · ${timeStr}</span>
       </div>
       <div class="matchup">
-        <span class="${homeClass}">${m.homeTeam.shortName || m.homeTeam.name}</span>
+        <span class="${homeClass}">${m.teams.home.name}</span>
         <span class="vs">vs</span>
-        <span class="${awayClass}">${m.awayTeam.shortName || m.awayTeam.name}</span>
+        <span class="${awayClass}">${m.teams.away.name}</span>
       </div>
-      <div class="venue">${isHome ? 'Home · Anfield' : 'Away'}</div>
+      <div class="venue">${isHome ? 'Home · Anfield' : 'Away · ' + m.fixture.venue.name}</div>
     </div>`;
   }).join('');
 }
