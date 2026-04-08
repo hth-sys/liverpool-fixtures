@@ -54,7 +54,8 @@ async function fetchFixtures() {
     const res = await fetch('/api/fixtures');
     if (!res.ok) throw new Error('API error ' + res.status);
     const data = await res.json();
-    allMatches = data.response || [];
+const now = new Date();
+allMatches = (data.response || []).filter(m => new Date(m.fixture.date) > now);
     if (!allMatches.length) throw new Error('No fixtures found');
     buildFilters();
     renderFixtures();
