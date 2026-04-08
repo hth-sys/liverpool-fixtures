@@ -55,8 +55,11 @@ async function fetchFixtures() {
     if (!res.ok) throw new Error('API error ' + res.status);
     const data = await res.json();
 const now = new Date();
-allMatches = (data.response || []).filter(m => new Date(m.fixture.date) > now);
-    if (!allMatches.length) throw new Error('No fixtures found');
+allMatches = data.response || [];
+if (!allMatches.length) throw new Error('No fixtures found');
+if (data.mode === 'recent') {
+  document.querySelector('.header-text p').textContent = 'Recent results';
+}
     buildFilters();
     renderFixtures();
   } catch(e) {
