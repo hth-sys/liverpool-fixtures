@@ -53,8 +53,9 @@ let activeFilter = 'All';
 
 async function fetchFixtures() {
   try {
+    const url = `https://api.football-data.org/v4/teams/${LFC_ID}/matches?status=SCHEDULED`;
     const res = await fetch(
-      `https://corsproxy.io/?url=https://api.football-data.org/v4/teams/${LFC_ID}/matches?status=SCHEDULED`,
+      `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
       { headers: { 'X-Auth-Token': API_KEY } }
     );
     if (!res.ok) throw new Error('API error ' + res.status);
