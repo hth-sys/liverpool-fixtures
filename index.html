@@ -24,8 +24,12 @@
     .team { font-size: 15px; font-weight: 600; color: #111; flex: 1; }
     .team.away { text-align: right; }
     .team.lfc { color: #C8102E; }
-    .vs { font-size: 12px; color: #aaa; padding: 0 4px; flex-shrink: 0; }
+    .score { font-size: 18px; font-weight: 700; color: #111; padding: 0 8px; flex-shrink: 0; }
     .venue { font-size: 12px; color: #aaa; margin-top: 6px; }
+    .result-badge { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 20px; margin-top: 6px; }
+    .result-w { background: #e6f4ea; color: #2e7d32; }
+    .result-d { background: #fff8e1; color: #f57f17; }
+    .result-l { background: #fce8e6; color: #c62828; }
     .loading { text-align: center; padding: 2rem; color: #888; font-size: 14px; }
     .error { background: #fff0f0; border: 1px solid #ffcccc; border-radius: 10px; padding: 1rem; color: #c00; font-size: 14px; margin-bottom: 10px; }
     .count { font-size: 13px; color: #888; margin-bottom: 10px; }
@@ -37,12 +41,12 @@
     <div class="crest">LFC</div>
     <div class="header-text">
       <h1>Liverpool FC</h1>
-      <p>Upcoming fixtures</p>
+      <p id="subtitle">Recent results</p>
     </div>
   </div>
   <div class="filter-row" id="filters"></div>
   <div class="count" id="count"></div>
-  <div id="fixtures-list"><div class="loading">Loading fixtures...</div></div>
+  <div id="fixtures-list"><div class="loading">Loading...</div></div>
 </div>
 
 <script>
@@ -52,14 +56,11 @@ let activeFilter = 'All';
 async function fetchFixtures() {
   try {
     const res = await fetch('/api/fixtures');
-    if (!res.ok) throw new Error('API error ' + res.status);
+    if (!res.ok) throw new Error('Server error ' + res.status);
     const data = await res.json();
-const now = new Date();
-allMatches = data.response || [];
-if (!allMatches.length) throw new Error('No fixtures found');
-if (data.mode === 'recent') {
-  document.querySelector('.header-text p').textContent = 'Recent results';
-}
+    if (data.error) throw new Error(data.error);
+    allMatches = data.response || [];
+    if (!allMatches.length) throw new Error('No matches found');
     buildFilters();
     renderFixtures();
   } catch(e) {
@@ -73,7 +74,7 @@ function buildFilters() {
   const row = document.getElementById('filters');
   row.innerHTML = comps.map(c =>
     `<button class="filter-btn${c === 'All' ? ' active' : ''}" onclick="setFilter('${c.replace(/'/g,"\\'")}')">
-      ${c === 'All' ? 'All competitions' : c}
+      ${c === 'All' ? 'All' : c}
     </button>`
   ).join('');
 }
@@ -81,39 +82,59 @@ function buildFilters() {
 function setFilter(comp) {
   activeFilter = comp;
   document.querySelectorAll('.filter-btn').forEach(b => {
-    b.classList.toggle('active', b.textContent.trim() === (comp === 'All' ? 'All competitions' : comp));
+    b.classList.toggle('active', b.textContent.trim() === (comp === 'All' ? 'All' : comp));
   });
   renderFixtures();
 }
 
+function getResult(m) {
+  const lfcHome = m.teams.home.name === 'Liverpool';
+  const lfcGoals = lfcHome ? m.goals.home : m.goals.away;
+  const oppGoals = lfcHome ? m.goals.away : m.goals.home;
+  if (lfcGoals > oppGoals) return { label: 'W', cls: 'result-w' };
+  if (lfcGoals < oppGoals) return { label: 'L', cls: 'result-l' };
+  return { label: 'D', cls: 'result-d' };
+}
+
 function renderFixtures() {
-  const filtered = activeFilter === 'All' ? allMatches : allMatches.filter(m => m.league.name === activeFilter);
+  const filtered = activeFilter === 'All'
+    ? allMatches
+    : allMatches.filter(m => m.league.name === activeFilter);
+
   document.getElementById('count').textContent = filtered.length
-    ? `${filtered.length} upcoming match${filtered.length !== 1 ? 'es' : ''}` : '';
+    ? `${filtered.length} match${filtered.length !== 1 ? 'es' : ''}` : '';
 
   if (!filtered.length) {
-    document.getElementById('fixtures-list').innerHTML = `<div class="loading">No upcoming fixtures found.</div>`;
+    document.getElementById('fixtures-list').innerHTML = `<div class="loading">No matches found.</div>`;
     return;
   }
 
   document.getElementById('fixtures-list').innerHTML = filtered.map(m => {
     const d = new Date(m.fixture.date);
-    const dateStr = d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
-    const timeStr = d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    const dateStr = d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
     const isHome = m.teams.home.name === 'Liverpool';
     const homeClass = `team${isHome ? ' lfc' : ''}`;
     const awayClass = `team away${!isHome ? ' lfc' : ''}`;
+    const finished = m.fixture.status.short === 'FT' || m.fixture.status.short === 'AET' || m.fixture.status.short === 'PEN';
+    const result = finished ? getResult(m) : null;
+    const scoreHtml = finished
+      ? `<span class="score">${m.goals.home} - ${m.goals.away}</span>`
+      : `<span class="score" style="font-size:13px;color:#aaa;">vs</span>`;
+    const venueName = isHome ? 'Anfield' : (m.fixture.venue.name || 'Away');
+
     return `<div class="fixture-card">
       <div class="fixture-meta">
         <span class="competition">${m.league.name}</span>
-        <span class="date">${dateStr} · ${timeStr}</span>
+        <span class="date">${dateStr}</span>
       </div>
       <div class="matchup">
         <span class="${homeClass}">${m.teams.home.name}</span>
-        <span class="vs">vs</span>
+        ${scoreHtml}
         <span class="${awayClass}">${m.teams.away.name}</span>
       </div>
-      <div class="venue">${isHome ? 'Home · Anfield' : 'Away · ' + m.fixture.venue.name}</div>
+      <div class="venue">${isHome ? 'Home' : 'Away'} · ${venueName}
+        ${result ? `<span class="result-badge ${result.cls}">${result.label}</span>` : ''}
+      </div>
     </div>`;
   }).join('');
 }
