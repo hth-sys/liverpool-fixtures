@@ -1,0 +1,9 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <rect width="512" height="512" rx="100" fill="#C8102E"/>
+  <rect x="12" y="12" width="488" height="488" rx="90" fill="none" stroke="#F6EB61" stroke-width="10"/>
+  <path d="M256 80 C256 80 220 112 220 145 C220 170 236 182 256 176 C276 182 292 170 292 145 C292 112 256 80 256 80Z" fill="#F6EB61"/>
+  <path d="M256 100 C256 100 232 126 232 148 C232 166 242 174 256 170 C270 174 280 166 280 148 C280 126 256 100 256 100Z" fill="#C8102E"/>
+  <path d="M256 118 C256 118 244 132 244 148 C244 159 249 164 256 163 C263 164 268 159 268 148 C268 132 256 118 256 118Z" fill="#F6EB61"/>
+  <text x="256" y="340" text-anchor="middle" font-family="Arial, sans-serif" font-size="150" font-weight="700" fill="#ffffff" letter-spacing="-2">LFC</text>
+  <text x="256" y="400" text-anchor="middle" font-family="Arial, sans-serif" font-size="44" font-weight="400" fill="#F6EB61" letter-spacing="8">FIXTURES</text>
+</svg>
