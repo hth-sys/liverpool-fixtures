@@ -1,5 +1,3 @@
-const fetch = require('node-fetch');
-
 exports.handler = async function() {
   const API_KEY = '792e4e6cd1eab9103b6d748131372325';
   const url = 'https://v3.football.api-sports.io/fixtures?team=40&next=20';
@@ -16,7 +14,7 @@ exports.handler = async function() {
       headers: { 'Access-Control-Allow-Origin': '*' },
       body: JSON.stringify(data)
     };
-  } catch (e) {
+  } catch(e) {
     return {
       statusCode: 500,
       body: JSON.stringify({ error: e.message })
